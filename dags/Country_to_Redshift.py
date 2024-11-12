@@ -23,7 +23,7 @@ def etl(schema, table):
     
     country_data = []
     for d in data:
-        country_name = d['name']['offical']
+        country_name = d['name']['official'].replace("'","")
         population = d['population']
         area = d['area']
         country_data.append("('{}',{},'{}')".format(country_name, population, area))
@@ -32,14 +32,14 @@ def etl(schema, table):
     drop_recreate_sql = f"""
     DROP TABLE IF EXISTS {schema}.{table};
     CREATE TABLE {schema}.{table} (
-        name varchar(256),
-        population integer,
-        area varchar(256)
+        name VARCHAR(256),
+        population INTEGER,
+        area VARCHAR(256)
     );
     """
     
     insert_sql = f"""
-    INSERT INTO {schema}.{table}
+    INSERT INTO {schema}.{table} (name, population, area)
     VALUES """ + ",".join(country_data)
     logging.info(drop_recreate_sql)
     logging.info(insert_sql)
