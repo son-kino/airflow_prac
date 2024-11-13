@@ -32,7 +32,7 @@ def etl(schema, table):
     drop_recreate_sql = f"""
     DROP TABLE IF EXISTS {schema}.{table};
     CREATE TABLE {schema}.{table} (
-        name VARCHAR(256),
+        name VARCHAR(256) primary key,
         population INTEGER,
         area VARCHAR(256)
     );
