@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS {schema}.{table} (
     high FLOAT,
     low FLOAT,
     close FLOAT,
-    volume BIGINT
+    volume BIGINT,
     created_date TIMESTAMP DEFAULT GETDATE()
 );""")
 
@@ -83,7 +83,7 @@ def load(schema, table, records):
 
 
 with DAG(
-    dag_id = 'UpdateSymbol_v2',
+    dag_id = 'UpdateSymbol_v3',
     start_date = datetime(2023,5,30),
     catchup=False,
     tags=['API'],
@@ -91,4 +91,4 @@ with DAG(
 ) as dag:
 
     results = get_historical_prices("AAPL")
-    load("sko99", "stock_info_v2", results)
+    load("sko99", "stock_info_v3", results)
