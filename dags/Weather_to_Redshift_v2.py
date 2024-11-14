@@ -24,7 +24,6 @@ def etl(schema, table, lat, lon, api_key):
     url = f"https://api.openweathermap.org/data/2.5/onecall?lat={lat}&lon={lon}&appid={api_key}&units=metric&exclude=current,minutely,hourly,alerts"
     response = requests.get(url)
     data = json.loads(response.text)
-
     """
     {'dt': 1622948400, 'sunrise': 1622923873, 'sunset': 1622976631, 'moonrise': 1622915520, 'moonset': 1622962620, 'moon_phase': 0.87, 'temp': {'day': 26.59, 'min': 15.67, 'max': 28.11, 'night': 22.68, 'eve': 26.29, 'morn': 15.67}, 'feels_like': {'day': 26.59, 'night': 22.2, 'eve': 26.29, 'morn': 15.36}, 'pressure': 1003, 'humidity': 30, 'dew_point': 7.56, 'wind_speed': 4.05, 'wind_deg': 250, 'wind_gust': 9.2, 'weather': [{'id': 802, 'main': 'Clouds', 'description': 'scattered clouds', 'icon': '03d'}], 'clouds': 44, 'pop': 0, 'uvi': 3}
     """
@@ -32,19 +31,19 @@ def etl(schema, table, lat, lon, api_key):
     for d in data["daily"]:
         day = datetime.fromtimestamp(d["dt"]).strftime('%Y-%m-%d')
         ret.append("('{}',{},{},{})".format(day, d["temp"]["day"], d["temp"]["min"], d["temp"]["max"]))
-
     cur = get_Redshift_connection()
     
     # 원본 테이블이 없다면 생성
-    create_table_sql = f"""CREATE TABLE IF NOT EXISTS {schema}.{table} (
-    date date,
-    temp float,
-    min_temp float,
-    max_temp float,
-    created_date timestamp default GETDATE()
-);"""
+    create_table_sql = f"""
+    CREATE TABLE IF NOT EXISTS {schema}.{table} (
+        date DATE PRIMARY KEY,
+        temp FLOAT,
+        min_temp FLOAT,
+        max_temp FLOAT,
+        created_date TIMESTAMP DEFAULT GETDATE()
+    );"""
     logging.info(create_table_sql)
-
+    
     # 임시 테이블 생성
     create_t_sql = f"""CREATE TEMP TABLE t AS SELECT * FROM {schema}.{table};"""
     logging.info(create_t_sql)
@@ -66,14 +65,16 @@ def etl(schema, table, lat, lon, api_key):
         cur.execute("ROLLBACK;")
         raise
 
-    # 기존 테이블 대체
-    alter_sql = f"""DELETE FROM {schema}.{table};
-      INSERT INTO {schema}.{table}
-      SELECT date, temp, min_temp, max_temp FROM (
-        SELECT *, ROW_NUMBER() OVER (PARTITION BY date ORDER BY created_date DESC) seq
-        FROM t
-      )
-      WHERE seq = 1;"""
+    # 기존 테이블 대체 # 가장 최신의 정보로 온도 정보를 가져온다.
+    alter_sql = f"""
+        DELETE FROM {schema}.{table};
+        INSERT INTO {schema}.{table}
+        SELECT date, temp, min_temp, max_temp FROM (
+            SELECT *, ROW_NUMBER() OVER (PARTITION BY date ORDER BY created_date DESC) seq
+            FROM t
+        )
+        WHERE seq = 1;
+        """ # seq가 1인 가장 최신의 정보를 가져온다.
     logging.info(alter_sql)
     try:
         cur.execute(alter_sql)
@@ -95,4 +96,4 @@ with DAG(
     }
 ) as dag:
 
-    etl("keeyong", "weather_forecast_v2", 37.5665, 126.9780, Variable.get("open_weather_api_key"))
+    etl("sko99", "weather_forecast_v2", 37.5665, 126.9780, Variable.get("open_weather_api_key"))
