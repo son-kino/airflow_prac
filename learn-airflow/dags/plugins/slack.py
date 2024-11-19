@@ -12,7 +12,7 @@ def on_failure_callback(context):
     text = str(context['task_instance'])
     text += "```" + str(context.get('exception')) +"```"
     send_message_to_a_slack_channel(text, ":scream:")
-
+# 원하는 것과 테스크와 연동하기
 
 # def send_message_to_a_slack_channel(message, emoji, channel, access_token):
 def send_message_to_a_slack_channel(message, emoji):
