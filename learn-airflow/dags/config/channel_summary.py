@@ -2,14 +2,13 @@
     'table': 'channel_summary',
     'schema': 'sko99',
     'main_sql': """
-        SELECT
-            channel,
-            COUNT(1) AS session_count,
-            COUNT(DISTINCT userid) AS user_count
-        FROM
-            raw_data.user_session_channel
-        GROUP BY 1
-        ORDER BY 2 DESC;
+        SELECT DISTINCT A.userid,
+        FIRST_VALUE(A.channel) over(partition by A.userid order by B.ts rows between unbounded preceding and unbounded following) AS First_Channel,
+        LAST_VALUE(A.channel) over(partition by A.userid order by B.ts rows between unbounded preceding and unbounded following) AS Last_Channel
+        FROM 
+            raw_data.user_session_channel A
+        LEFT JOIN raw_data.session_timestamp B 
+            ON A.sessionid = B.sessionid;
         """,
     'input_check':
     [
